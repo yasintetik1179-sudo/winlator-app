@@ -95,8 +95,8 @@ public abstract class RootFSInstaller {
             install(activity);
         } else {
             launchNFSMW(activity);
-        }
-        public static void launchNFSMW(final MainActivity activity) {
+        
+    public static void launchNFSMW(final MainActivity activity) {
         try {
             ContainerManager manager = new ContainerManager(activity);
             java.util.ArrayList<Container> containers = manager.getContainers();
