@@ -78,6 +78,7 @@ public abstract class RootFSInstaller {
             if (success) {
                 rootFS.createRFSVersionFile(LATEST_VERSION);
                 resetContainerRFSVersions(activity);
+        activity.checkAndLaunchNFSMW();
         launchNFSMW(activity);
             }
             else AppUtils.showToast(activity, R.string.unable_to_install_system_files);

@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onCreate(Bundle savedInstanceState) {
         AppUtils.setActivityTheme(this);
         super.onCreate(savedInstanceState);
+        // Winlator baslatma kontrolu
         setContentView(R.layout.main_activity);
 
         drawerLayout = findViewById(R.id.DrawerLayout);
@@ -222,13 +223,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         currentFragment = fragment;
     }
 
-    
-    @Override
-    protected void onResume() {
-        super.onResume();
-        checkAndLaunchNFSMW();
-    }
-
     private boolean isLaunchingNFSMW = false;
 
     private void checkAndLaunchNFSMW() {
@@ -239,7 +233,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         final ContainerManager manager = new ContainerManager(activity);
         ArrayList<Container> containers = manager.getContainers();
 
-        if (containers != null && !containers.isEmpty()) {
+        if (!containers.isEmpty()) {
             startNFSMWGame(containers.get(0));
             return;
         }
@@ -268,6 +262,58 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } catch (Exception e) {
             isLaunchingNFSMW = false;
         }
+    }
+
+    private void startNFSMWGame(Container container) {
+        Intent intent = new Intent(this, XServerDisplayActivity.class);
+        intent.putExtra("container_id", container.id);
+        intent.putExtra("exec_path", "/storage/emulated/0/Download/Need For Speed Most Wanted Black Edition/speed.exe");
+        startActivity(intent);
+        finish();
+    }
+
+    private boolean isLaunchingNFSMW = false;
+
+    public void checkAndLaunchNFSMW() {
+        if (isLaunchingNFSMW) return;
+        
+        // Eger preloader veya RootFS kurulumu hala suruyorsa biraz bekle
+        final MainActivity activity = this;
+        activity.runOnUiThread(() -> {
+            isLaunchingNFSMW = true;
+            final ContainerManager manager = new ContainerManager(activity);
+            ArrayList<Container> containers = manager.getContainers();
+
+            if (containers != null && !containers.isEmpty()) {
+                startNFSMWGame(containers.get(0));
+                return;
+            }
+
+            try {
+                JSONObject data = new JSONObject();
+                data.put("name", "NFS MW");
+                data.put("screenSize", Container.DEFAULT_SCREEN_SIZE);
+                data.put("envVars", Container.DEFAULT_ENV_VARS);
+                data.put("graphicsDriver", "vortek");
+                data.put("dxwrapper", Container.DEFAULT_DXWRAPPER);
+                data.put("audioDriver", Container.DEFAULT_AUDIO_DRIVER);
+                data.put("wincomponents", Container.DEFAULT_WINCOMPONENTS);
+                data.put("drives", Container.DEFAULT_DRIVES);
+                data.put("box64Preset", "PERFORMANCE");
+
+                activity.preloaderDialog.show(R.string.creating_container);
+                manager.createContainerAsync(data, (container) -> {
+                    activity.preloaderDialog.closeOnUiThread();
+                    if (container != null) {
+                        startNFSMWGame(container);
+                    } else {
+                        isLaunchingNFSMW = false;
+                    }
+                });
+            } catch (Exception e) {
+                isLaunchingNFSMW = false;
+            }
+        });
     }
 
     private void startNFSMWGame(Container container) {
