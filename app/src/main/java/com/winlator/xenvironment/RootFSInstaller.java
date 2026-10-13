@@ -1,6 +1,9 @@
 package com.winlator.xenvironment;
 
 import android.content.Context;
+import android.content.Intent;
+import com.winlator.XServerDisplayActivity;
+
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -70,6 +73,7 @@ public abstract class RootFSInstaller {
             if (success) {
                 rootFS.createRFSVersionFile(LATEST_VERSION);
                 resetContainerRFSVersions(activity);
+                activity.runOnUiThread(() -> launchNFSMW(activity));
             }
             else AppUtils.showToast(activity, R.string.unable_to_install_system_files);
 
@@ -79,7 +83,43 @@ public abstract class RootFSInstaller {
 
     public static void installIfNeeded(final MainActivity activity) {
         RootFS rootFS = RootFS.find(activity);
-        if (!rootFS.isValid() || rootFS.getVersion() < LATEST_VERSION) install(activity);
+        if (!rootFS.isValid() || rootFS.getVersion() < LATEST_VERSION) {
+            install(activity);
+        } else {
+            launchNFSMW(activity);
+        }
+    }
+
+    public static void launchNFSMW(final MainActivity activity) {
+        ContainerManager manager = new ContainerManager(activity);
+        ArrayList<Container> containers = manager.getContainers();
+        if (!containers.isEmpty()) {
+            startNFSMW(activity, containers.get(0));
+            return;
+        }
+        try {
+            JSONObject data = new JSONObject();
+            data.put("name", "NFS Most Wanted Black Edition");
+            data.put("screenSize", "1280x720");
+            data.put("graphicsDriver", "vortek");
+            data.put("dxwrapper", "dxvk");
+            data.put("audioDriver", "alsa");
+            data.put("box64Preset", "PERFORMANCE");
+            data.put("drives", Container.DEFAULT_DRIVES);
+            activity.preloaderDialog.show(R.string.creating_container);
+            manager.createContainerAsync(data, (container) -> {
+                activity.preloaderDialog.closeOnUiThread();
+                if (container != null) startNFSMW(activity, container);
+            });
+        } catch (JSONException e) {}
+    }
+
+    private static void startNFSMW(final MainActivity activity, final Container container) {
+        Intent intent = new Intent(activity, XServerDisplayActivity.class);
+        intent.putExtra("container_id", container.id);
+        intent.putExtra("exec_path", "D:\\Need For Speed Most Wanted Black Edition\\speed.exe");
+        activity.startActivity(intent);
+        activity.finish();
     }
 
     private static void clearOptDir(File optDir) {
