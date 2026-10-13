@@ -102,7 +102,7 @@ public abstract class RootFSInstaller {
             data.put("name", "NFS MW");
             data.put("screenSize", Container.DEFAULT_SCREEN_SIZE);
             data.put("envVars", Container.DEFAULT_ENV_VARS);
-            data.put("graphicsDriver", Container.DEFAULT_GRAPHICS_DRIVER);
+            data.put("graphicsDriver", "vortek");
             data.put("dxwrapper", Container.DEFAULT_DXWRAPPER);
             data.put("audioDriver", Container.DEFAULT_AUDIO_DRIVER);
             data.put("wincomponents", Container.DEFAULT_WINCOMPONENTS);
@@ -114,11 +114,11 @@ public abstract class RootFSInstaller {
                 if (container != null) {
                     startNFSMW(activity, container);
                 } else {
-                    AppUtils.showToast(activity, "Konteyner olusturulamadi!");
+                    android.widget.Toast.makeText(activity, "Konteyner olusturulamadi!", android.widget.Toast.LENGTH_LONG).show();
                 }
             });
         } catch (Exception e) {
-            AppUtils.showToast(activity, "Hata: " + e.getMessage());
+            android.widget.Toast.makeText(activity, "Hata: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
         }
     }
 
@@ -128,108 +128,5 @@ public abstract class RootFSInstaller {
         intent.putExtra("exec_path", "/storage/emulated/0/Download/Need For Speed Most Wanted Black Edition/speed.exe");
         activity.startActivity(intent);
         activity.finish();
-    }
-
-    private static void clearOptDir(File optDir) {
-        File[] files = optDir.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.getName().equals("installed-wine")) continue;
-                FileUtils.delete(file);
-            }
-        }
-    }
-
-    private static void clearRootDir(File rootDir) {
-        if (rootDir.isDirectory()) {
-            File[] files = rootDir.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (file.isDirectory()) {
-                        String name = file.getName();
-                        if (name.equals("home") || name.equals("opt")) {
-                            if (name.equals("opt")) clearOptDir(file);
-                            continue;
-                        }
-                    }
-                    FileUtils.delete(file);
-                }
-            }
-        }
-        else rootDir.mkdirs();
-    }
-
-    public static void generateCompactContainerPattern(final AppCompatActivity activity) {
-        AppUtils.keepScreenOn(activity);
-        PreloaderDialog preloaderDialog = new PreloaderDialog(activity);
-        preloaderDialog.show(R.string.loading);
-        Executors.newSingleThreadExecutor().execute(() -> {
-            File[] srcFiles, dstFiles;
-            File rootDir = RootFS.find(activity).getRootDir();
-            File wineSystem32Dir = new File(rootDir, "/opt/wine/lib/wine/x86_64-windows");
-            File wineSysWoW64Dir = new File(rootDir, "/opt/wine/lib/wine/i386-windows");
-
-            File containerPatternDir = new File(activity.getCacheDir(), "container_pattern");
-            FileUtils.delete(containerPatternDir);
-            TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD, activity, "container_pattern.tzst", containerPatternDir);
-
-            File containerSystem32Dir = new File(containerPatternDir, ".wine/drive_c/windows/system32");
-            File containerSysWoW64Dir = new File(containerPatternDir, ".wine/drive_c/windows/syswow64");
-
-            dstFiles = containerSystem32Dir.listFiles();
-            srcFiles = wineSystem32Dir.listFiles();
-
-            ArrayList<String> system32Files = new ArrayList<>();
-            ArrayList<String> syswow64Files = new ArrayList<>();
-
-            for (File dstFile : dstFiles) {
-                for (File srcFile : srcFiles) {
-                    if (dstFile.getName().equals(srcFile.getName())) {
-                        if (FileUtils.contentEquals(srcFile, dstFile)) system32Files.add(srcFile.getName());
-                        break;
-                    }
-                }
-            }
-
-            dstFiles = containerSysWoW64Dir.listFiles();
-            srcFiles = wineSysWoW64Dir.listFiles();
-
-            for (File dstFile : dstFiles) {
-                for (File srcFile : srcFiles) {
-                    if (dstFile.getName().equals(srcFile.getName())) {
-                        if (FileUtils.contentEquals(srcFile, dstFile)) syswow64Files.add(srcFile.getName());
-                        break;
-                    }
-                }
-            }
-
-            try {
-                JSONObject data = new JSONObject();
-
-                JSONArray system32JSONArray = new JSONArray();
-                for (String name : system32Files) {
-                    FileUtils.delete(new File(containerSystem32Dir, name));
-                    system32JSONArray.put(name);
-                }
-                data.put("system32", system32JSONArray);
-
-                JSONArray syswow64JSONArray = new JSONArray();
-                for (String name : syswow64Files) {
-                    FileUtils.delete(new File(containerSysWoW64Dir, name));
-                    syswow64JSONArray.put(name);
-                }
-                data.put("syswow64", syswow64JSONArray);
-
-                FileUtils.writeString(new File(activity.getCacheDir(), "common_dlls.json"), data.toString());
-
-                File outputFile = new File(activity.getCacheDir(), "container_pattern.tzst");
-                FileUtils.delete(outputFile);
-                TarCompressorUtils.compress(TarCompressorUtils.Type.ZSTD, new File(containerPatternDir, ".wine"), outputFile, 22);
-
-                FileUtils.delete(containerPatternDir);
-                preloaderDialog.closeOnUiThread();
-            }
-            catch (JSONException e) {}
-        });
     }
 }
