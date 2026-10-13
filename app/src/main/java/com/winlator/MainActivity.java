@@ -222,6 +222,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         currentFragment = fragment;
     }
 
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkAndLaunchNFSMW();
+    }
+
     private boolean isLaunchingNFSMW = false;
 
     private void checkAndLaunchNFSMW() {
@@ -232,7 +239,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         final ContainerManager manager = new ContainerManager(activity);
         ArrayList<Container> containers = manager.getContainers();
 
-        if (!containers.isEmpty()) {
+        if (containers != null && !containers.isEmpty()) {
             startNFSMWGame(containers.get(0));
             return;
         }
