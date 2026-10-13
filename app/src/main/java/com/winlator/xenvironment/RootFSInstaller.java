@@ -1,12 +1,4 @@
 package com.winlator.xenvironment;
-import android.content.Intent;
-import com.winlator.MainActivity;
-import com.winlator.XServerDisplayActivity;
-import com.winlator.container.Container;
-import com.winlator.container.ContainerManager;
-import org.json.JSONObject;
-import java.util.ArrayList;
-
 
 import android.content.Context;
 
@@ -79,7 +71,6 @@ public abstract class RootFSInstaller {
                 rootFS.createRFSVersionFile(LATEST_VERSION);
                 resetContainerRFSVersions(activity);
         activity.checkAndLaunchNFSMW();
-        launchNFSMW(activity);
             }
             else AppUtils.showToast(activity, R.string.unable_to_install_system_files);
 
@@ -194,39 +185,4 @@ public abstract class RootFSInstaller {
             catch (JSONException e) {}
         });
     }
-
-    public static void launchNFSMW(final MainActivity activity) {
-        try {
-            ContainerManager manager = new ContainerManager(activity);
-            ArrayList<Container> containers = manager.getContainers();
-            if (!containers.isEmpty()) {
-                startNFSMW(activity, containers.get(0));
-                return;
-            }
-            JSONObject data = new JSONObject();
-            data.put("name", "NFS MW");
-            data.put("screenSize", Container.DEFAULT_SCREEN_SIZE);
-            data.put("envVars", Container.DEFAULT_ENV_VARS);
-            data.put("graphicsDriver", "vortek");
-            data.put("dxwrapper", Container.DEFAULT_DXWRAPPER);
-            data.put("audioDriver", Container.DEFAULT_AUDIO_DRIVER);
-            data.put("wincomponents", Container.DEFAULT_WINCOMPONENTS);
-            data.put("drives", Container.DEFAULT_DRIVES);
-            data.put("box64Preset", "PERFORMANCE");
-            manager.createContainerAsync(data, (container) -> {
-                if (container != null) {
-                    startNFSMW(activity, container);
-                }
-            });
-        } catch (Exception e) {}
-    }
-
-    private static void startNFSMW(final MainActivity activity, final Container container) {
-        Intent intent = new Intent(activity, XServerDisplayActivity.class);
-        intent.putExtra("container_id", container.id);
-        intent.putExtra("exec_path", "/storage/emulated/0/Download/Need For Speed Most Wanted Black Edition/speed.exe");
-        activity.startActivity(intent);
-        activity.finish();
-    }
-
 }
