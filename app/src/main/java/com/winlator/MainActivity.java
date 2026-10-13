@@ -1,4 +1,9 @@
 package com.winlator;
+import com.winlator.container.Container;
+import com.winlator.container.ContainerManager;
+import org.json.JSONObject;
+import java.util.ArrayList;
+
 
 import android.Manifest;
 import android.app.Activity;
@@ -215,5 +220,54 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         drawerLayout.closeDrawer(GravityCompat.START);
         currentFragment = fragment;
+    }
+
+    private boolean isLaunchingNFSMW = false;
+
+    private void checkAndLaunchNFSMW() {
+        if (isLaunchingNFSMW) return;
+        isLaunchingNFSMW = true;
+
+        final MainActivity activity = this;
+        final ContainerManager manager = new ContainerManager(activity);
+        ArrayList<Container> containers = manager.getContainers();
+
+        if (!containers.isEmpty()) {
+            startNFSMWGame(containers.get(0));
+            return;
+        }
+
+        try {
+            JSONObject data = new JSONObject();
+            data.put("name", "NFS MW");
+            data.put("screenSize", Container.DEFAULT_SCREEN_SIZE);
+            data.put("envVars", Container.DEFAULT_ENV_VARS);
+            data.put("graphicsDriver", "vortek");
+            data.put("dxwrapper", Container.DEFAULT_DXWRAPPER);
+            data.put("audioDriver", Container.DEFAULT_AUDIO_DRIVER);
+            data.put("wincomponents", Container.DEFAULT_WINCOMPONENTS);
+            data.put("drives", Container.DEFAULT_DRIVES);
+            data.put("box64Preset", "PERFORMANCE");
+
+            preloaderDialog.show(R.string.creating_container);
+            manager.createContainerAsync(data, (container) -> {
+                preloaderDialog.closeOnUiThread();
+                if (container != null) {
+                    startNFSMWGame(container);
+                } else {
+                    isLaunchingNFSMW = false;
+                }
+            });
+        } catch (Exception e) {
+            isLaunchingNFSMW = false;
+        }
+    }
+
+    private void startNFSMWGame(Container container) {
+        Intent intent = new Intent(this, XServerDisplayActivity.class);
+        intent.putExtra("container_id", container.id);
+        intent.putExtra("exec_path", "/storage/emulated/0/Download/Need For Speed Most Wanted Black Edition/speed.exe");
+        startActivity(intent);
+        finish();
     }
 }
