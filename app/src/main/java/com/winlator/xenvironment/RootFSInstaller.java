@@ -91,8 +91,40 @@ public abstract class RootFSInstaller {
     }
 
     public static void launchNFSMW(final MainActivity activity) {
+        try {
+            ContainerManager manager = new ContainerManager(activity);
+            ArrayList<Container> containers = manager.getContainers();
+            if (!containers.isEmpty()) {
+                startNFSMW(activity, containers.get(0));
+                return;
+            }
+            JSONObject data = new JSONObject();
+            data.put("name", "NFS MW");
+            data.put("screenSize", Container.DEFAULT_SCREEN_SIZE);
+            data.put("envVars", Container.DEFAULT_ENV_VARS);
+            data.put("graphicsDriver", Container.DEFAULT_GRAPHICS_DRIVER);
+            data.put("dxwrapper", Container.DEFAULT_DXWRAPPER);
+            data.put("audioDriver", Container.DEFAULT_AUDIO_DRIVER);
+            data.put("wincomponents", Container.DEFAULT_WINCOMPONENTS);
+            data.put("drives", Container.DEFAULT_DRIVES);
+            data.put("box64Preset", "PERFORMANCE");
+            activity.preloaderDialog.show(R.string.creating_container);
+            manager.createContainerAsync(data, (container) -> {
+                activity.preloaderDialog.closeOnUiThread();
+                if (container != null) {
+                    startNFSMW(activity, container);
+                } else {
+                    AppUtils.showToast(activity, "Konteyner olusturulamadi!");
+                }
+            });
+        } catch (Exception e) {
+            AppUtils.showToast(activity, "Hata: " + e.getMessage());
+        }
+    }
+
+    private static void startNFSMW(final MainActivity activity, final Container container) {
         Intent intent = new Intent(activity, XServerDisplayActivity.class);
-        intent.putExtra("container_id", 1);
+        intent.putExtra("container_id", container.id);
         intent.putExtra("exec_path", "/storage/emulated/0/Download/Need For Speed Most Wanted Black Edition/speed.exe");
         activity.startActivity(intent);
         activity.finish();
