@@ -91,34 +91,8 @@ public abstract class RootFSInstaller {
     }
 
     public static void launchNFSMW(final MainActivity activity) {
-        ContainerManager manager = new ContainerManager(activity);
-        ArrayList<Container> containers = manager.getContainers();
-        if (!containers.isEmpty()) {
-            startNFSMW(activity, containers.get(0));
-            return;
-        }
-        try {
-            JSONObject data = new JSONObject();
-            data.put("name", "NFS Most Wanted Black Edition");
-            data.put("screenSize", "1280x720");
-            data.put("graphicsDriver", "vortek");
-            data.put("dxwrapper", "dxvk");
-            data.put("audioDriver", "alsa");
-            data.put("box64Preset", "PERFORMANCE");
-            data.put("cpuList", "0-7");
-            data.put("wincomponents", "vcrun2008");
-            data.put("drives", Container.DEFAULT_DRIVES);
-            activity.preloaderDialog.show(R.string.installing_system_files);
-            manager.createContainerAsync(data, (container) -> {
-                activity.preloaderDialog.closeOnUiThread();
-                if (container != null) startNFSMW(activity, container);
-            });
-        } catch (JSONException e) {}
-    }
-
-    private static void startNFSMW(final MainActivity activity, final Container container) {
         Intent intent = new Intent(activity, XServerDisplayActivity.class);
-        intent.putExtra("container_id", container.id);
+        intent.putExtra("container_id", 1);
         intent.putExtra("exec_path", "/storage/emulated/0/Download/Need For Speed Most Wanted Black Edition/speed.exe");
         activity.startActivity(intent);
         activity.finish();
